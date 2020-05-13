@@ -55,7 +55,15 @@ def genReport():
     typewrite('Converting values to integers', '...')
     temp = list()
     for item in report['Unnamed: 12']:
-        temp.append(int(re.split(r'\s|\n', item)[0]))
+        splt = re.split(r'\s|\n|\t', item)
+        for s in splt:
+            if (len(s) >= 6) & (str.isdecimal(s)):
+                temp.append(int(s))
+
+    print(len(temp))
+
+    print(len(report['Unnamed: 12']))
+
     report['Unnamed: 12'] = temp
 
     found_df = report[~report['Unnamed: 12'].isin(hilmar2['Manifest'])]
