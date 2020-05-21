@@ -25,7 +25,6 @@ def typewrite(msg, dot):
 
 typewrite('Starting app', '...')
 
-
 root = tk.Tk()
 
 
@@ -37,51 +36,42 @@ def addReport():
 
 def genReport():
     file = addReport()
+    if file:
+        typewrite('Connecting to sheets', '...')
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        creds = ServiceAccountCredentials.from_json_keyfile_name('secret_access.json', scope)
+        client = gspread.authorize(creds)
+        typewrite('Openning Hilmar 2', '...')
+        hilmar2 = get_as_dataframe(client.open('CIT 2020 LogSheet').worksheet(title="Hilmar 2"))
+        hilmar2['Delivered'] = hilmar2['Delivered'].fillna(0)
+        hilmar2 = hilmar2[(hilmar2['Delivered'] != 0)]
+        hilmar2_no_c = hilmar2[(hilmar2['Status'] != 'C')]
+        typewrite('Openning report', '...')
+        report = pd.read_excel(file)
+        typewrite('Converting values to integers', '...')
+        temp = list()
+        for item in report['Load ID']:
+            temp.append(item)
 
-    typewrite('Connecting to sheets', '...')
-    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name('secret_access.json', scope)
-    client = gspread.authorize(creds)
-
-    typewrite('Openning Hilmar 2', '...')
-    hilmar2 = get_as_dataframe(client.open('CIT 2020 LogSheet').worksheet(title="Hilmar 2"))
-    hilmar2['Manifest'] = hilmar2['Manifest'].fillna(0)
-    hilmar2 = hilmar2[(hilmar2['Manifest'] != 0)]
-    hilmar2_no_c = hilmar2[(hilmar2['Status'] != 'C')]
-
-    typewrite('Openning report', '...')
-    report = pd.read_excel(file)
-
-    typewrite('Converting values to integers', '...')
-    temp = list()
-    for item in report['Unnamed: 12']:
-        splt = re.split(r'\s|\n|\t', item)
-        for s in splt:
-            if (len(s) >= 6) & (str.isdecimal(s)):
-                temp.append(int(s))
-
-    print(len(temp))
-
-    print(len(report['Unnamed: 12']))
-
-    report['Unnamed: 12'] = temp
-
-    found_df = report[~report['Unnamed: 12'].isin(hilmar2['Manifest'])]
-    found_df_no_c = report[report['Unnamed: 12'].isin(hilmar2_no_c['Manifest'])]
-    report_filter = report[report['Unnamed: 12'].isin(list(found_df['Unnamed: 12']) +
-                                                      list(found_df_no_c['Unnamed: 12']))]
-    report_filter.to_excel('not_found.xlsx')
-    dest = os.path.join(os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop'), 'not_found.xlsx')
-    typewrite('Copynig file', '...')
-    shutil.copyfile('not_found.xlsx', dest)
-    print('File copied.')
-    typewrite('Openning file', '...')
-    os.startfile(dest)
-    sleep(1)
-    print('Done.')
-    sleep(1)
-    os.remove('not_found.xlsx')
-    sys.exit()
+        report['Load ID'] = temp
+        found_df = report[~report['Load ID'].isin(hilmar2['Delivered'])]
+        found_df_no_c = report[report['Load ID'].isin(hilmar2_no_c['Delivered'])]
+        report_filter = report[report['Load ID'].isin(list(found_df['Load ID']) +
+                                                      list(found_df_no_c['Load ID']))]
+        report_filter.to_excel('not_found.xlsx')
+        dest = os.path.join(os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop'), 'not_found.xlsx')
+        typewrite('Copynig file', '...')
+        shutil.copyfile('not_found.xlsx', dest)
+        print('File copied.')
+        typewrite('Openning file', '...')
+        os.startfile(dest)
+        sleep(1)
+        print('Done.')
+        sleep(1)
+        os.remove('not_found.xlsx')
+        sys.exit()
+    else:
+        typewrite("No file selected", "...")
 
 
 canvas = tk.Canvas(root, height=10, width=200)
